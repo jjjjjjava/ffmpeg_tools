@@ -1,8 +1,22 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [1.0.2] - 2025-12-10
 
-## [1.0.0] - 2024-12-10
+### Added
+- 完善 README 文档：相关文档
+
+## [1.0.1] - 2025-12-10
+
+### Added
+- 添加 `homepage` 字段
+- 添加 `example` 示例目录
+- 完善 README 文档：实现方案、功能验证、使用注意事项
+
+### Fixed
+- 修复 `repository` 链接
+
+## [1.0.0] - 2025-12-10
 
 ### Added
 - 初始版本发布
