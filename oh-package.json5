@@ -1,10 +1,12 @@
 {
   "name": "@prq/ffmpeg-tools",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "FFmpeg tools for HarmonyOS - 视频格式转换、音频提取、流媒体处理",
   "main": "Index.ets",
   "author": "prq",
   "license": "MIT",
+  "homepage": "https://ohpm.openharmony.cn/#/cn/detail/@prq%2Fffmpeg-tools",
+  "repository": "https://github.com/jjjjjjava/ffmpeg_tools",
   "keywords": [
     "ffmpeg",
     "video",
@@ -13,8 +15,7 @@
     "harmonyos",
     "ohos"
   ],
-  "repository": "https://github.com/prq/ffmpeg-tools-ohos",
   "dependencies": {
-    "@ohos/aki": "1.2.24",
+    "@ohos/aki": "1.2.24"
   }
 }
