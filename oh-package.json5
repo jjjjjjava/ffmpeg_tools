@@ -1,7 +1,7 @@
 {
   "name": "@prq/ffmpeg-tools",
-  "version": "1.0.2",
-  "description": "FFmpeg tools for HarmonyOS - 视频格式转换、音频提取、流媒体处理",
+  "version": "2.0.0",
+  "description": "FFmpeg tools for HarmonyOS - 视频格式转换、音频提取、流媒体处理、硬件加速编解码",
   "main": "Index.ets",
   "author": "prq",
   "license": "MIT",
@@ -13,7 +13,9 @@
     "audio",
     "converter",
     "harmonyos",
-    "ohos"
+    "ohos",
+    "hardware-acceleration",
+    "h264_ohosavcodec"
   ],
   "dependencies": {
     "@ohos/aki": "1.2.24"
