@@ -19,11 +19,16 @@ ohpm install @prq/ffmpeg-tools
 - 进度回调
 - 任务取消
 
+v2.0.0版本更新：支持硬解，扩充了硬解相关能力，包括：视频缩放，添加水印，视频转码等。
+
 ## 功能验证
+
+### 1.零拷贝
 
 已测试从网络 MP4 下载并转换为 `mkv`、`avi`、`mp4` 等格式，输出结果正常可用。
 
 **示例执行命令：**
+
 ```
 ffmpeg -i https://example.com/video.mp4 -c:v copy -c:a copy -f avi -y /data/storage/el2/base/haps/entry/files/output.avi
 ```
@@ -40,33 +45,48 @@ ffmpeg -i https://example.com/video.mp4 -c:v copy -c:a copy -f avi -y /data/stor
 - 提取到电脑上播放
   - ![结果2](./src/main/resources/base/media/pic2.png)
 
+### 2. 硬解硬编
+
+视频加水印
+
+**示例执行命令：**
+
+```
+ffmpeg -i https://sns-video-al.xhscdn.com/stream/110/405/01e583cb6e0fed5a010370038c8ad962fb_405.mp4 
+-i /data/storage/el2/base/haps/entry/files/watermark_selected.png -filter_complex [0:v][1:v]overlay=main_w-overlay_w-10:main_h-overlay_h-10[outv] -map [outv] -map 0:a -c:v h264_ohosavcodec -c:a copy -y /data/storage/el2/base/haps/entry/files/watermark_output.mp4
+```
+
+- 这里使用的是h264_ohosavcodec进行硬解码和硬编码相关处理
+
+**性能统计：**
+
+- 2分钟时长视频，硬解加水印耗时约15.68S
+- [1:41:13 PM]：输出文件大小:90712.12 KB
+
+**示例结果：**
+
+- 提取到电脑上播放
+  - ![结果3](./src/main/resources/base/media/pic3.png)
+
 ## 快速开始
 
 ### 基本使用
 
 ```typescript
-import { FFmpegManager, FFmpegFactory, TaskCallback } from '@prq/ffmpeg-tools';
+import { FFmpegManager, FFmpegFactory, ContainerFormat, TaskCallback } from '@prq/ffmpeg-tools';
 
 // 获取管理器实例
 const manager = FFmpegManager.getInstance();
 
-// 执行视频转换
+// 执行视频格式转换（零拷贝）
 const taskId = manager.execute(
-  FFmpegFactory.buildMp42Flv(inputPath, outputPath),
+  FFmpegFactory.remux(inputPath, outputPath, ContainerFormat.FLV),
   120000, // 超时时间（毫秒）
   {
-    onStart: () => {
-      console.log('任务开始');
-    },
-    onProgress: (progress: number) => {
-      console.log(`进度: ${(progress * 100).toFixed(1)}%`);
-    },
-    onSuccess: () => {
-      console.log('转换成功');
-    },
-    onFailure: () => {
-      console.log('转换失败');
-    }
+    onStart: () => console.log('任务开始'),
+    onProgress: (progress: number) => console.log(`进度: ${(progress * 100).toFixed(1)}%`),
+    onSuccess: () => console.log('转换成功'),
+    onFailure: () => console.log('转换失败')
   } as TaskCallback
 );
 
@@ -74,40 +94,85 @@ const taskId = manager.execute(
 manager.cancel(taskId);
 ```
 
-### 支持的格式转换
-
-```typescript
-import { FFmpegFactory } from '@prq/ffmpeg-tools';
-
-// 视频格式转换
-FFmpegFactory.buildMp42Flv(input, output);  // MP4 → FLV
-FFmpegFactory.buildMp42Avi(input, output);  // MP4 → AVI
-FFmpegFactory.buildMp42Mkv(input, output);  // MP4 → MKV
-FFmpegFactory.buildMp42Ts(input, output);   // MP4 → TS
-FFmpegFactory.buildMp42Mp4(input, output);  // 视频复制
-
-// 音频提取
-FFmpegFactory.buildExtractMp3(input, output);  // 提取 MP3
-FFmpegFactory.buildExtractAac(input, output);  // 提取 AAC
-```
-
-### 自定义命令
+### 开启 Native 日志
 
 ```typescript
 import { FFMpegUtils } from '@prq/ffmpeg-tools';
 
-FFMpegUtils.executeFFmpegCommand({
-  cmds: ['-i', inputPath, '-c:v', 'libx264', '-c:a', 'aac', outputPath],
-  onFFmpegProgress: (progress) => {
-    console.log(`进度: ${progress}%`);
-  },
-  onFFmpegFail: (code, msg) => {
-    console.error(`失败: ${code} - ${msg}`);
-  },
-  onFFmpegSuccess: () => {
-    console.log('成功');
-  }
-});
+// 开启 FFmpeg native 层日志输出
+FFMpegUtils.showLog(true);
+```
+
+### 零拷贝操作（最快）
+
+```typescript
+import { FFmpegFactory, ContainerFormat } from '@prq/ffmpeg-tools';
+
+// 封装格式转换
+FFmpegFactory.remux(input, output, ContainerFormat.MP4);  // 默认 MP4
+FFmpegFactory.remux(input, output, ContainerFormat.FLV);  // MP4 → FLV
+FFmpegFactory.remux(input, output, ContainerFormat.AVI);  // MP4 → AVI
+FFmpegFactory.remux(input, output, ContainerFormat.MKV);  // MP4 → MKV
+FFmpegFactory.remux(input, output, ContainerFormat.TS);   // MP4 → TS
+
+// 视频裁剪
+FFmpegFactory.cut(input, output, '00:00:10', '30');  // 从10秒开始裁剪30秒
+
+// 音频提取
+FFmpegFactory.extractAudio(input, output);  // 提取 AAC 音频
+```
+
+### 硬解硬编操作（h264_ohosavcodec）
+
+```typescript
+import { FFmpegFactory } from '@prq/ffmpeg-tools';
+
+// 视频缩放
+FFmpegFactory.scale(input, output, 1280, 720);  // 缩放到 720p
+
+// 视频转码
+FFmpegFactory.transcode(input, output);         // 默认转码
+FFmpegFactory.transcode(input, output, '2M');   // 指定码率 2Mbps
+
+// 添加水印（右下角）
+FFmpegFactory.watermark(input, watermarkImg, output);
+
+// 视频拼接
+FFmpegFactory.concat([video1, video2, video3], output);
+```
+
+### 网络流媒体
+
+```typescript
+import { FFmpegFactory } from '@prq/ffmpeg-tools';
+
+// RTSP 流录制
+FFmpegFactory.downloadRtsp(rtspUrl, output);           // 持续录制
+FFmpegFactory.downloadRtsp(rtspUrl, output, 60);       // 录制60秒
+
+// HLS 流下载
+FFmpegFactory.downloadHls(hlsUrl, output);
+```
+
+### 高级定制（FFmpegCommandBuilder）
+
+```typescript
+import { FFmpegCommandBuilder } from '@prq/ffmpeg-tools';
+
+// 链式构建自定义命令
+const cmd = new FFmpegCommandBuilder()
+  .input(inputPath)
+  .hwaccel()                    // 启用硬解硬编
+  .scale(1280, 720)             // 缩放
+  .fps(30)                      // 帧率
+  .videoBitrate('2M')           // 视频码率
+  .audioCodec('aac')            // 音频编码
+  .audioBitrate('128k')         // 音频码率
+  .output(outputPath)
+  .build();
+
+// 执行命令
+manager.execute(cmd, 180000, callback);
 ```
 
 ## 实现方案
@@ -137,6 +202,45 @@ FFMpegUtils.executeFFmpegCommand({
 
 ## API
 
+### FFmpegFactory（零配置命令工厂）
+
+| 方法 | 说明 |
+|------|------|
+| `remux(input, output, format?)` | 封装格式转换（零拷贝） |
+| `cut(input, output, startTime, duration)` | 视频裁剪（零拷贝） |
+| `extractAudio(input, output)` | 提取音频（AAC） |
+| `scale(input, output, width, height)` | 视频缩放（硬解硬编） |
+| `watermark(input, watermarkImg, output)` | 添加水印（硬编码） |
+| `transcode(input, output, bitrate?)` | 视频转码（硬解硬编） |
+| `concat(inputFiles, output)` | 视频拼接（硬解硬编） |
+| `downloadRtsp(rtspUrl, output, duration?)` | RTSP 流录制 |
+| `downloadHls(hlsUrl, output)` | HLS 流下载 |
+
+### FFmpegCommandBuilder（高级定制）
+
+| 方法 | 说明 |
+|------|------|
+| `input(path)` | 添加输入文件 |
+| `output(path)` | 设置输出文件 |
+| `hwaccel()` | 启用硬件加速（硬解+硬编） |
+| `hwDecode()` | 仅启用硬件解码 |
+| `hwEncode()` | 仅启用硬件编码 |
+| `filter(expr)` | 添加视频滤镜 |
+| `scale(width, height)` | 视频缩放 |
+| `fps(value)` | 设置帧率 |
+| `videoCodec(codec)` | 设置视频编码器 |
+| `audioCodec(codec)` | 设置音频编码器 |
+| `videoBitrate(bitrate)` | 设置视频码率 |
+| `audioBitrate(bitrate)` | 设置音频码率 |
+| `preset(value)` | 设置 x264 预设 |
+| `crf(value)` | 设置 CRF 质量 |
+| `format(fmt)` | 设置输出格式 |
+| `startTime(time)` | 设置开始时间 |
+| `duration(time)` | 设置持续时长 |
+| `arg(key, value?)` | 添加额外参数 |
+| `build()` | 构建命令数组 |
+| `buildString()` | 构建命令字符串（调试用） |
+
 ### FFmpegManager
 
 | 方法 | 说明 |
@@ -149,6 +253,13 @@ FFMpegUtils.executeFFmpegCommand({
 | `getPendingTaskCount()` | 获取等待任务数 |
 | `getActiveTaskCount()` | 获取活动任务数 |
 
+### FFMpegUtils
+
+| 方法 | 说明 |
+|------|------|
+| `executeFFmpegCommand(options)` | 执行 FFmpeg 命令（底层接口） |
+| `showLog(show)` | 开启/关闭 Native 层日志 |
+
 ### TaskCallback
 
 | 回调 | 说明 |
@@ -160,6 +271,16 @@ FFMpegUtils.executeFFmpegCommand({
 | `onCancelled?()` | 任务取消 |
 | `onTimeout?()` | 任务超时 |
 | `onError?(error)` | 错误信息 |
+
+### ContainerFormat
+
+| 格式 | 说明 |
+|------|------|
+| `MP4` | MP4 格式 |
+| `FLV` | FLV 格式 |
+| `MKV` | MKV 格式 |
+| `AVI` | AVI 格式 |
+| `TS` | MPEG-TS 格式 |
 
 ### TaskPriority
 
@@ -205,8 +326,40 @@ FFMpegUtils.executeFFmpegCommand({
 
 ## 相关文档
 
-- [FFmpegUtils 实现思路](https://blog.csdn.net/qq_35829566/article/details/155782443?sharetype=blogdetail&sharerId=155782443&sharerefer=PC&sharesource=qq_35829566&spm=1011.2480.3001.8118) <!-- TODO: 补充链接 -->
-- [鸿蒙下 FFmpeg 编译流程](https://blog.csdn.net/qq_35829566/article/details/155781896?sharetype=blogdetail&sharerId=155781896&sharerefer=PC&sharesource=qq_35829566&spm=1011.2480.3001.8118) <!-- TODO: 补充链接 -->
+- [FFmpegUtils 实现思路](https://blog.csdn.net/qq_35829566/article/details/155782443?sharetype=blogdetail&sharerId=155782443&sharerefer=PC&sharesource=qq_35829566&spm=1011.2480.3001.8118) 
+- [鸿蒙下 FFmpeg 编译流程](https://blog.csdn.net/qq_35829566/article/details/155781896?sharetype=blogdetail&sharerId=155781896&sharerefer=PC&sharesource=qq_35829566&spm=1011.2480.3001.8118) 
+
+## 🍎贡献代码与技术交流
+
+- 使用过程中如发现问题，欢迎通过 [Issue](https://github.com/jjjjjjava/ffmpeg_tools/issues) 提交反馈；
+- 也非常欢迎感兴趣的开发者提交 [PR](https://github.com/jjjjjjava/ffmpeg_tools/pulls)，共同完善项目；
+- 若遇到较复杂的问题，建议开启 **native 层日志**，并携带相关日志信息反馈，我会尽快协助排查和处理。
+
+## 后续更新计划
+
+####  1.错误处理机制说明（当前限制）
+
+- 当前错误处理机制存在一定限制：即使 **native 层执行失败**，上层也可能 **无法收到错误反馈**。根本原因在于： native 层在部分异常场景下 **仍返回 `code = 0`**，该返回值在上层被视为「执行成功」，从而导致错误被吞掉。从根本上解决该问题，需要 **native 层补充更完善的错误码与异常处理逻辑**。
+
+#### 2.后续计划
+
+- 后面会逐步对 native 层的错误返回机制进行优化，使错误能够准确向上抛出。
+
+#### 3.临时解决方案
+
+- 在当前阶段，**建议开启 FFmpeg native 层日志** 来定位问题：
+
+  ```
+  // 开启 FFmpeg native 层日志输出
+  FFMpegUtils.showLog(true);
+  ```
+
+- 启用后，可在日志中看到 **具体的错误原因与 FFmpeg 原始输出**；
+
+  - 如下：ets层显示成功，但是native层报错
+  - ![结果4](./src/main/resources/base/media/pic4.png)
+
+- 当出现转码 / 执行失败问题时，请 **携带 native 日志一起反馈**，有助于快速定位和解决。
 
 ## License
 
