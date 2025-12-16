@@ -14,8 +14,7 @@
     "converter",
     "harmonyos",
     "ohos",
-    "hardware-acceleration",
-    "h264_ohosavcodec"
+    "codec"
   ],
   "dependencies": {
     "@ohos/aki": "1.2.24"
