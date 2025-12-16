@@ -1,11 +1,8 @@
 /**
  * @prq/ffmpeg-tools - HarmonyOS FFmpeg 工具库
  *
- * 架构：单工作线程 + 优先级任务队列
- * FFmpeg 内部使用全局变量，不支持多线程并发，必须串行执行
- *
  * @author prq
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 // 核心管理类
@@ -17,8 +14,11 @@ export { TaskConfig, TaskConfigBuilder } from './src/main/ets/ffmpeg/TaskConfig'
 export { TaskCallback } from './src/main/ets/ffmpeg/TaskCallback';
 export { TaskPriority } from './src/main/ets/ffmpeg/TaskPriority';
 
-// 命令工厂
-export { FFmpegFactory } from './src/main/ets/ffmpeg/FFmpegFactory';
+// 命令工厂（简单易用）
+export { FFmpegFactory, ContainerFormat } from './src/main/ets/ffmpeg/FFmpegFactory';
+
+// 命令构建器（高级定制）
+export { FFmpegCommandBuilder } from './src/main/ets/ffmpeg/FFmpegCommandBuilder';
 
 // 日志工具
 export { FLog } from './src/main/ets/ffmpeg/FLog';
