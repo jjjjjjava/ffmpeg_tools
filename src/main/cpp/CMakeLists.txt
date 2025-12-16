@@ -100,6 +100,14 @@ target_link_libraries(ffmpegutils PRIVATE
     libhilog_ndk.z.so           # 日志系统
     
     # ----------------------------------------
+    # 鸿蒙媒体编解码库（FFmpeg 硬件加速依赖）
+    # ----------------------------------------
+    libnative_media_codecbase.so   # OH_AVFormat_* 等基础函数
+    libnative_media_core.so        # 核心媒体功能
+    libnative_media_vdec.so        # OH_VideoDecoder_* 视频解码
+    libnative_media_venc.so        # OH_VideoEncoder_* 视频编码
+
+    # ----------------------------------------
     # AKI 框架（跨语言绑定）
     # ----------------------------------------
     Aki::libjsbind
