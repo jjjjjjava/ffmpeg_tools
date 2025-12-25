@@ -63,7 +63,6 @@ export class FFmpegFactory {
   public static scale(input: string, output: string, width: number, height: number): string[] {
     return [
       'ffmpeg',
-      '-c:v', FFmpegFactory.HW_CODEC,
       '-i', input,
       '-vf', `scale=${width}:${height}`,
       '-c:v', FFmpegFactory.HW_CODEC,
