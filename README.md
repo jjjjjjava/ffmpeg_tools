@@ -1,6 +1,6 @@
 # @prq/ffmpeg-tools
 
-HarmonyOS FFmpeg 工具库 —— 在鸿蒙中调用 FFmpeg 命令行工具（fftools），最终驱动 FFmpeg.so 执行音视频处理任务。
+HarmonyOS FFmpeg 工具库 —— 在鸿蒙中调用 FFmpeg 命令行工具（fftools），最终驱动 FFmpeg.so 执行音视频处理任务。同时提供硬件加速能力，在保证稳定性的前提下显著提升处理效率。
 
 ## 安装
 
@@ -12,14 +12,10 @@ ohpm install @prq/ffmpeg-tools
 
 本库的核心能力是将 FFmpeg 命令行工具封装为 ArkTS 可调用的 Native 接口，支持：
 
-- 视频格式转换（MP4、FLV、AVI、MKV、TS）
-- 音频提取（MP3、AAC）
-- 网络流媒体下载
-- 优先级任务队列
-- 进度回调
-- 任务取消
-
-v2.0.0版本更新：支持硬解，扩充了硬解相关能力，包括：视频缩放，添加水印，视频转码等。
+- 提供统一、可编程的音视频处理能力
+- 支持转码、提取、下载等常见场景
+- 内置完善的任务管理与进度控制机制
+- 提供硬件解码与编码加速能力，在保证稳定性的前提下显著提升处理效率，适合对性能与能耗敏感的音视频场景。
 
 ## 功能验证
 
@@ -204,6 +200,8 @@ manager.execute(cmd, 180000, callback);
 
 ### FFmpegFactory（零配置命令工厂）
 
+#### 视频处理
+
 | 方法 | 说明 |
 |------|------|
 | `remux(input, output, format?)` | 封装格式转换（零拷贝） |
@@ -215,6 +213,23 @@ manager.execute(cmd, 180000, callback);
 | `concat(inputFiles, output)` | 视频拼接（硬解硬编） |
 | `downloadRtsp(rtspUrl, output, duration?)` | RTSP 流录制 |
 | `downloadHls(hlsUrl, output)` | HLS 流下载 |
+
+#### 图片处理
+
+| 方法 | 说明 |
+|------|------|
+| `videoToGif(input, output, fps?, width?)` | 视频转 GIF（默认 10fps, 320px 宽） |
+| `videoSnapshot(input, output, time?)` | 视频截图（默认第1秒） |
+| `videoToImages(input, outputPattern, fps?)` | 视频批量截图（默认每秒1张） |
+| `imagesToVideo(inputPattern, output, fps?)` | 图片序列合成视频（默认 25fps） |
+| `imageScale(input, output, width, height?)` | 图片缩放（height=-1 保持宽高比） |
+| `imageConvert(input, output, quality?)` | 图片格式转换（quality: 1-31，默认2） |
+| `imageWatermark(input, watermark, output, position?)` | 图片添加水印（支持5个位置） |
+| `imageHStack(inputs, output)` | 图片横向拼接 |
+| `imageVStack(inputs, output)` | 图片纵向拼接 |
+| `imageRotate(input, output, angle)` | 图片旋转（90/180/270度） |
+| `imageCrop(input, output, width, height, x?, y?)` | 图片裁剪 |
+| `imageAddText(input, output, text, fontSize?, color?, x?, y?)` | 图片添加文字 |
 
 ### FFmpegCommandBuilder（高级定制）
 
@@ -360,6 +375,18 @@ manager.execute(cmd, 180000, callback);
   - ![结果4](./src/main/resources/base/media/pic4.png)
 
 - 当出现转码 / 执行失败问题时，请 **携带 native 日志一起反馈**，有助于快速定位和解决。
+
+## 版本更新说明
+
+### v2.0.0
+
+提供硬件解码与编码加速能力，在保证稳定性的前提下显著提升处理效率，适合对性能与能耗敏感的音视频场景。
+
+### v2.1.0
+
+1.修复视频缩放场景下音频流未正确写入的问题
+
+2.解决 [#issue1](https://github.com/jjjjjjava/ffmpeg_tools/issues/1)，新增图片处理相关能力
 
 ## License
 

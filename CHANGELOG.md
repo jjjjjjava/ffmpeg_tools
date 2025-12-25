@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.1.0] - 2025-12-25
+
+### Added
+- **图片处理支持**：新增 13 个图片处理方法
+  - `videoToGif()` - 视频转 GIF 动图
+  - `videoSnapshot()` - 视频截图（单帧）
+  - `videoToImages()` - 视频批量截图
+  - `imagesToVideo()` - 图片序列合成视频
+  - `imageScale()` - 图片缩放
+  - `imageConvert()` - 图片格式转换
+  - `imageWatermark()` - 图片添加水印（支持5个位置）
+  - `imageHStack()` - 图片横向拼接
+  - `imageVStack()` - 图片纵向拼接
+  - `imageRotate()` - 图片旋转（90/180/270度）
+  - `imageCrop()` - 图片裁剪
+  - `imageAddText()` - 图片添加文字
+
+### Fixed
+- **修复视频缩放失败问题**：移除输入前的硬解码器指定，避免音频流解析错误
+  - 问题：`-c:v h264_ohosavcodec -i input` 导致音频流解码失败
+  - 解决：改为 `-i input ... -c:v h264_ohosavcodec` 只在输出时使用硬编码
+- **优化音频处理**：视频缩放时音频使用 copy 模式，提升性能
+
+### Changed
+- 更新 README 文档，新增图片处理 API 说明
+- 优化 FFmpegFactory 代码结构，按功能分类
+- 圣诞节快乐
+
 ## [2.0.0] - 2025-12-16
 
 ### Added
@@ -61,3 +89,4 @@ All notable changes to this project will be documented in this file.
 - 进度回调支持
 - 任务取消支持
 - 完整的错误处理机制
+
