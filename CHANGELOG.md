@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] - 2025-12-26
+
+### Added
+
+- **native层日志支持**：默认开启 native 日志
+- **降低API版本要求**：将 最低SDK版本从 17 降低到 12，让库可以在更多设备上运行
+
 ## [2.1.0] - 2025-12-25
 
 ### Added

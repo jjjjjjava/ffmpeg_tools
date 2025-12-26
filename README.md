@@ -16,6 +16,7 @@ ohpm install @prq/ffmpeg-tools
 - 支持转码、提取、下载等常见场景
 - 内置完善的任务管理与进度控制机制
 - 提供硬件解码与编码加速能力，在保证稳定性的前提下显著提升处理效率，适合对性能与能耗敏感的音视频场景。
+- 最低运行版本 *"compatibleSdkVersion": "5.0.0(12)"*
 
 ## 功能验证
 
@@ -387,6 +388,12 @@ manager.execute(cmd, 180000, callback);
 1.修复视频缩放场景下音频流未正确写入的问题
 
 2.解决 [#issue1](https://github.com/jjjjjjava/ffmpeg_tools/issues/1)，新增图片处理相关能力
+
+### v2.2.0
+
+1.默认开启 native 日志
+
+2.降低 API 版本要求：将 最低SDK版本从 17 降低到 12，让库可以在更多设备上运行
 
 ## License
 
