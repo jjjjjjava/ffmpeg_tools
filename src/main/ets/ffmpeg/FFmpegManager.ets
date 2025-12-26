@@ -39,6 +39,8 @@ export class FFmpegManager {
   
   private constructor() {
     FLog.info(FFmpegManager.TAG, 'FFmpegManager initialized');
+    // 默认开启 native 层日志
+    FFMpegUtils.showLog(true);
     // 启动工作线程
     this.startWorkerLoop();
   }
