@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.1] - 2026-01-09
+
+### Added
+
+- native层可以正确的返回错误
+
 ## [2.2.0] - 2025-12-26
 
 ### Added

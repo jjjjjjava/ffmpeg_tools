@@ -1,6 +1,6 @@
 {
   "name": "@prq/ffmpeg-tools",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "面向 HarmonyOS 的 FFmpeg 工具库，支持音视频与图片处理，并提供硬件编解码加速能力",
   "main": "Index.ets",
   "author": "prq",

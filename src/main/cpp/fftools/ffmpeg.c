@@ -4269,8 +4269,12 @@ int exe_ffmpeg_cmd(int argc, char **argv, Callbacks *callbacks)
     } else {
         // ===== longjmp 跳转后到达这里 =====
         main_return_code = (received_nb_signals) ? 255 : longjmp_value;
+        // 先保存错误码
+        int saved_error = main_return_code;
         // 重置全局状态，确保下次执行时状态干净
         reset_ffmpeg_state();
+        // 返回保存的错误码
+        return saved_error;
     }
     
     return main_return_code;  // 优雅返回
