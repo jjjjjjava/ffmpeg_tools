@@ -72,6 +72,49 @@ ffmpeg -i https://sns-video-al.xhscdn.com/stream/110/405/01e583cb6e0fed5a0103700
 - 提取到电脑上播放
   - ![结果3](./src/main/resources/base/media/pic3.png)
 
+
+
+视频裁剪
+
+**测试素材配置**：
+
+1. 编码：H.264
+2. 时长：约 1 分 34 秒
+3. 原始大小：4.75 MB
+
+**示例执行命令：**
+
+```
+ffmpeg -i /data/storage/el2/base/haps/entry/files/selected_video.mp4
+-vf crop=640:360:0:0
+-c:v h264_ohosavcodec
+-c:a copy
+-vsync cfr -fps_mode cfr
+-max_muxing_queue_size 1024
+-y /data/storage/el2/base/haps/entry/files/crop_output.mp4
+```
+
+**执行流程**：
+
+1. 输入视频：H.264
+2. 硬解码（GPU）→ 原始 YUV 帧
+3. crop 滤镜（CPU）→ 裁剪后的 YUV
+4. 硬编码（GPU）→ 输出 H.264 视频
+
+**性能统计：**
+
+- 总耗时：10.04 s
+- 输出文件大小：约 16.34 MB（16742.76 KB）
+- ![结果5](./src/main/resources/base/media/pic5.png)
+
+**示例结果：**对比32s位置，方便大家进行对比观测效果
+
+- 原始画面
+  - ![结果6](./src/main/resources/base/media/pic6.png)
+
+- 视频裁剪后画面
+  - ![结果7](./src/main/resources/base/media/pic7.png)
+
 ## 快速开始
 
 ### 基本使用
@@ -221,6 +264,8 @@ manager.execute(cmd, 180000, callback);
 | `concat(inputFiles, output)` | 视频拼接（硬解硬编） |
 | `downloadRtsp(rtspUrl, output, duration?)` | RTSP 流录制 |
 | `downloadHls(hlsUrl, output)` | HLS 流下载 |
+| videoCrop(   input,   output,   width,   height,   x,   y ) | 视频裁剪（crop + 硬解硬编） |
+| videoCropCenter(   input,   output,   width,   height) | 视频居中裁剪（crop + 硬解硬编） |
 
 #### 图片处理
 
@@ -383,6 +428,18 @@ manager.execute(cmd, 180000, callback);
 ### v2.2.1
 
 1.native层可以正确的返回错误
+
+### v2.2.2
+
+1.解决 [#issue2](https://github.com/jjjjjjava/ffmpeg_tools/issues/2)，修复 HAR 包缺少 libaki_jsbind.so 导致的 "Cannot read property JSBind of undefined" 错误
+
+### v2.2.3
+
+1.解决 [#issue3](https://github.com/jjjjjjava/ffmpeg_tools/issues/3)，新增视频裁剪相关能力
+
+## 鸣谢
+
+感谢 **zpswz、FXY970610、magicalapp** 提出的相关 issue，帮助我更好地完善和验证了本项目。
 
 ## License
 

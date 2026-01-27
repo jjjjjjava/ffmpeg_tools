@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.3] - 2026-01-27
+
+### Added
+
+- **视频裁剪能力支持**：新增视频裁剪方法
+
+## [2.2.2] - 2026-01-12
+
+### Fixed
+
+- 修复 HAR 包缺少 libaki_jsbind.so 导致的 "Cannot read property JSBind of undefined" 错误
+
 ## [2.2.1] - 2026-01-09
 
 ### Added

@@ -72,6 +72,67 @@ export class FFmpegFactory {
   }
 
   /**
+   * 视频裁剪（crop + 硬编码）
+   * 注意：crop 滤镜在 CPU 执行，但解码和编码使用硬件加速
+   *
+   * @param input 输入视频路径
+   * @param output 输出视频路径
+   * @param width 裁剪宽度
+   * @param height 裁剪高度
+   * @param x 裁剪起始 X 坐标（默认 0）
+   * @param y 裁剪起始 Y 坐标（默认 0）
+   *
+   * @example
+  * // 从 (100, 50) 位置裁剪 1280x720 区域
+   * FFmpegFactory.videoCrop(input, output, 1280, 720, 100, 50);
+   *
+   * // 居中裁剪（使用表达式）
+   * FFmpegFactory.videoCropCenter(input, output, 1280, 720);
+   */
+  public static videoCrop(
+    input: string,
+    output: string,
+    width: number,
+    height: number,
+    x: number = 0,
+    y: number = 0
+  ): string[] {
+    return [
+      'ffmpeg',
+      '-i', input,
+      '-vf', `crop=${width}:${height}:${x}:${y}`,
+      '-c:v', FFmpegFactory.HW_CODEC,
+      '-c:a', 'copy',
+      '-y', output
+    ];
+  }
+
+  /**
+   * 视频居中裁剪（crop + 硬编码）
+   * 自动计算居中位置进行裁剪
+   *
+   * @param input 输入视频路径
+   * @param output 输出视频路径
+   * @param width 裁剪宽度
+   * @param height 裁剪高度
+   */
+  public static videoCropCenter(
+    input: string,
+    output: string,
+    width: number,
+    height: number
+  ): string[] {
+    return [
+      'ffmpeg',
+      '-i', input,
+      '-vf', `crop=${width}:${height}:(in_w-${width})/2:(in_h-${height})/2`,
+      '-c:v', FFmpegFactory.HW_CODEC,
+      '-c:a', 'copy',
+      '-y', output
+    ];
+  }
+
+  /**
    * 添加水印（右下角）
    * 注意：overlay 滤镜需要软解码，硬编码输出
    */
