@@ -51,7 +51,7 @@ ffmpeg -i https://example.com/video.mp4 -c:v copy -c:a copy -f avi -y /data/stor
 
 ### 2. 硬解硬编
 
-视频加水印
+#### 2.1 视频加水印
 
 **示例执行命令：**
 
@@ -74,7 +74,7 @@ ffmpeg -i https://sns-video-al.xhscdn.com/stream/110/405/01e583cb6e0fed5a0103700
 
 
 
-视频裁剪
+#### 2.2 视频裁剪
 
 **测试素材配置**：
 
@@ -114,6 +114,73 @@ ffmpeg -i /data/storage/el2/base/haps/entry/files/selected_video.mp4
 
 - 视频裁剪后画面
   - ![结果7](./src/main/resources/base/media/pic7.png)
+
+
+
+#### 2.3 视频转码
+
+**测试素材配置**：
+
+1. 编码：H.264
+2. 时长：约 6 分 48 秒
+3. 原始大小：49.2 MB
+4. 原始码率：1012 kbps
+
+**示例执行命令：**
+
+```
+ffmpeg -i /data/storage/el2/base/haps/entry/files/selected_video.mp4
+-c:v h264_ohosavcodec -b:v 300k -c:a aac -y
+/data/storage/el2/base/haps/entry/files/low_bitrate_300k.mp4
+
+ffmpeg -i /data/storage/el2/base/haps/entry/files/selected_video.mp4
+-c:v h264_ohosavcodec -b:v 500k -c:a aac -y
+/data/storage/el2/base/haps/entry/files/low_bitrate_500k.mp4
+```
+
+**结果统计：**
+
+- 目标码率：500k（粗略设置）
+  - 实际输出码率：约 648 kbps
+  - 输出文件大小：31.5 MB
+  - 相比原始视频体积降低约 36%
+
+- 目标码率：300k（粗略设置）
+  - 实际输出码率：约 440 kbps
+  - 输出文件大小：21.4 MB
+  - 相比原始视频体积降低约 56%
+
+- 耗时：针对时长为 6 分 48 秒的视频，单次转码耗时约 67.77 秒
+
+注：实际输出码率略高于设置值，符合编码器在质量与码率控制之间的正常行为，但整体趋势与预期一致，码率控制已生效。
+
+**示例结果：**
+
+原视频信息：
+
+- 码率
+  - ![结果8](./src/main/resources/base/media/pic8.png)
+
+- 大小
+  - ![结果9](./src/main/resources/base/media/pic9.png)
+
+粗略设置为300k码率
+
+- 码率
+  - ![结果10](./src/main/resources/base/media/pic12.png)
+
+- 帧率
+  - ![结果11](./src/main/resources/base/media/pic13.png)
+
+
+
+画面对比
+
+- 原画面
+  - ![结果15](./src/main/resources/base/media/pic15.png)
+
+- 粗略设置为300k码率
+  - ![结果14](./src/main/resources/base/media/pic14.png)
 
 ## 快速开始
 
@@ -405,7 +472,10 @@ manager.execute(cmd, 180000, callback);
 
 ## 后续更新计划
 
-- 目前项目中使用暂未遇到问题，暂无更新计划。如果大家使用的时候有遇到什么问题，可以提issue反馈，我会及时更新处理。
+- 针对 [#issue5](https://github.com/jjjjjjava/ffmpeg_tools/issues/5)：设置了目标码率后，输出视频始终以较高码率生成，码率参数未生效的问题。
+  - 已向官方 FFmpeg（OpenHarmony）仓库提交 Issue：
+    https://gitee.com/openharmony-tpc-incubate/FFmpeg/issues/IDMF3P
+  - 计划整理并提交 MR，将本次修改合入官方源码
 
 ## 版本更新说明
 
@@ -436,6 +506,51 @@ manager.execute(cmd, 180000, callback);
 ### v2.2.3
 
 1.解决 [#issue3](https://github.com/jjjjjjava/ffmpeg_tools/issues/3)，新增视频裁剪相关能力
+
+### v2.2.4
+
+1.解决 [#issue5](https://github.com/jjjjjjava/ffmpeg_tools/issues/5)，解决显式设置了目标码率后，输出视频始终以较高码率生成，码率参数未生效的问题。
+
+### v2.2.5
+
+1.README 样式优化
+
+## 问题根因分析与修复方案（Root Cause & Fix）
+
+### 1.[#issue5](https://github.com/jjjjjjava/ffmpeg_tools/issues/5)：码率设置失效
+
+#### 01.问题现象（Issue Description）
+
+在使用 FFmpeg 进行视频转码时，即使显式设置了目标码率（如 -b:v 300k / 500k），
+输出视频始终以较高码率生成，码率参数未生效。
+
+#### 02.根因定位（Root Cause）
+
+经排查确认，该问题并非调用方式错误，而是 OHOS 版本 FFmpeg 源码实现缺失导致：
+在 OHOS 平台的视频输出配置逻辑中
+相关代码位置虽然进行了编码参数初始化
+但未将用户设置的码率参数写入编码配置中
+
+对应源码位置如下（未设置码率）：
+![结果16](./src/main/resources/base/media/pic16.png)
+
+#### 03.解决方案（Solution）
+
+3.1 源码修改
+在对应的视频编码配置逻辑中，补充码率参数设置，使其正确传递到编码器。
+
+修改示例如下：
+![结果17](./src/main/resources/base/media/pic17.png)
+
+3.2 重新编译 FFmpeg
+
+基于修改后的源码，重新编译 OHOS 平台 FFmpeg：
+![结果18](./src/main/resources/base/media/pic18.png)
+
+3.3 替换产物
+
+将重新编译生成的 FFmpeg 相关产物替换到运行环境中：
+![结果19](./src/main/resources/base/media/pic19.png)
 
 ## 鸣谢
 

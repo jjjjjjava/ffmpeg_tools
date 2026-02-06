@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.5] - 2026-02-06
+
+### Fixed
+
+- README样式优化
+
+## [2.2.4] - 2026-02-02
+
+### Fixed
+
+- 修复显式设置了目标码率后，输出视频始终以较高码率生成，码率参数未生效的问题。
+
 ## [2.2.3] - 2026-01-27
 
 ### Added

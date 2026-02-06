@@ -59,16 +59,20 @@ export class FFmpegFactory {
 
   /**
    * 视频缩放
+   * @param bitrate 可选码率参数，如 '1M', '500k'。不设置则使用编码器默认质量
    */
-  public static scale(input: string, output: string, width: number, height: number): string[] {
-    return [
+  public static scale(input: string, output: string, width: number, height: number, bitrate?: string): string[] {
+    const cmd: string[] = [
       'ffmpeg',
       '-i', input,
       '-vf', `scale=${width}:${height}`,
-      '-c:v', FFmpegFactory.HW_CODEC,
-      '-c:a', 'copy',
-      '-y', output
+      '-c:v', FFmpegFactory.HW_CODEC
     ];
+    if (bitrate !== undefined) {
+      cmd.push('-b:v', bitrate);
+    }
+    cmd.push('-c:a', 'copy', '-y', output);
+    return cmd;
   }
 
   /**
@@ -81,6 +85,7 @@ export class FFmpegFactory {
    * @param height 裁剪高度
    * @param x 裁剪起始 X 坐标（默认 0）
    * @param y 裁剪起始 Y 坐标（默认 0）
+   * @param bitrate 可选码率参数，如 '1M', '500k'。不设置则使用编码器默认质量
    *
    * @example
   * // 从 (100, 50) 位置裁剪 1280x720 区域
@@ -95,16 +100,20 @@ export class FFmpegFactory {
     width: number,
     height: number,
     x: number = 0,
-    y: number = 0
+    y: number = 0,
+    bitrate?: string
   ): string[] {
-    return [
+    const cmd: string[] = [
       'ffmpeg',
       '-i', input,
       '-vf', `crop=${width}:${height}:${x}:${y}`,
-      '-c:v', FFmpegFactory.HW_CODEC,
-      '-c:a', 'copy',
-      '-y', output
+      '-c:v', FFmpegFactory.HW_CODEC
     ];
+    if (bitrate !== undefined) {
+      cmd.push('-b:v', bitrate);
+    }
+    cmd.push('-c:a', 'copy', '-y', output);
+    return cmd;
   }
 
   /**
@@ -115,39 +124,48 @@ export class FFmpegFactory {
    * @param output 输出视频路径
    * @param width 裁剪宽度
    * @param height 裁剪高度
+   * @param bitrate 可选码率参数，如 '1M', '500k'。不设置则使用编码器默认质量
    */
   public static videoCropCenter(
     input: string,
     output: string,
     width: number,
-    height: number
+    height: number,
+    bitrate?: string
   ): string[] {
-    return [
+    const cmd: string[] = [
       'ffmpeg',
       '-i', input,
       '-vf', `crop=${width}:${height}:(in_w-${width})/2:(in_h-${height})/2`,
-      '-c:v', FFmpegFactory.HW_CODEC,
-      '-c:a', 'copy',
-      '-y', output
+      '-c:v', FFmpegFactory.HW_CODEC
     ];
+    if (bitrate !== undefined) {
+      cmd.push('-b:v', bitrate);
+    }
+    cmd.push('-c:a', 'copy', '-y', output);
+    return cmd;
   }
 
   /**
    * 添加水印（右下角）
    * 注意：overlay 滤镜需要软解码，硬编码输出
+   * @param bitrate 可选码率参数，如 '1M', '500k'。不设置则使用编码器默认质量
    */
-  public static watermark(input: string, watermarkImg: string, output: string): string[] {
-    return [
+  public static watermark(input: string, watermarkImg: string, output: string, bitrate?: string): string[] {
+    const cmd: string[] = [
       'ffmpeg',
       '-i', input,
       '-i', watermarkImg,
       '-filter_complex', '[0:v][1:v]overlay=main_w-overlay_w-10:main_h-overlay_h-10[outv]',
       '-map', '[outv]',
       '-map', '0:a',
-      '-c:v', FFmpegFactory.HW_CODEC,
-      '-c:a', 'copy',
-      '-y', output
+      '-c:v', FFmpegFactory.HW_CODEC
     ];
+    if (bitrate !== undefined) {
+      cmd.push('-b:v', bitrate);
+    }
+    cmd.push('-c:a', 'copy', '-y', output);
+    return cmd;
   }
 
   /**
