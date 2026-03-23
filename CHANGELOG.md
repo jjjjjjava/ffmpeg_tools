@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.6] - 2026-03-23
+
+### Fixed
+
+- 直接使用execute方法导致崩溃 
+
 ## [2.2.5] - 2026-02-06
 
 ### Fixed

@@ -475,7 +475,8 @@ manager.execute(cmd, 180000, callback);
 - 针对 [#issue5](https://github.com/jjjjjjava/ffmpeg_tools/issues/5)：设置了目标码率后，输出视频始终以较高码率生成，码率参数未生效的问题。
   - 已向官方 FFmpeg（OpenHarmony）仓库提交 Issue：
     https://gitee.com/openharmony-tpc-incubate/FFmpeg/issues/IDMF3P
-  - 计划整理并提交 MR，将本次修改合入官方源码
+  - 已整理并提交 MR，将本次修改合入官方源码
+- 解决 [#issue7](https://github.com/jjjjjjava/ffmpeg_tools/issues/7)，丰富FFmpeg的能力
 
 ## 版本更新说明
 
@@ -515,6 +516,10 @@ manager.execute(cmd, 180000, callback);
 
 1.README 样式优化
 
+### v2.2.6
+
+1解决 [#issue6](https://github.com/jjjjjjava/ffmpeg_tools/issues/6)，解决直接使用execute方法导致崩溃
+
 ## 问题根因分析与修复方案（Root Cause & Fix）
 
 ### 1.[#issue5](https://github.com/jjjjjjava/ffmpeg_tools/issues/5)：码率设置失效
@@ -552,9 +557,80 @@ manager.execute(cmd, 180000, callback);
 将重新编译生成的 FFmpeg 相关产物替换到运行环境中：
 ![结果19](./src/main/resources/base/media/pic19.png)
 
+### 2.[#issue6](https://github.com/jjjjjjava/ffmpeg_tools/issues/6)：直接使用execute方法导致崩溃
+
+#### 01.问题现象（Issue Description）
+
+执行 `FFmpegManager.getInstance().execute(["ffmpeg", "-version"], 30000, callback)` 时， 应用概率性崩溃，触发 SIGSEGV(SEGV_MAPERR) 信号。
+
+崩溃堆栈如下：
+
+```
+#00 pc strnlen
+#01 pc printf_core+2160
+#02 pc vfprintf+172
+#03 pc log_callback_help+76        (libffmpegutils.so)
+#04 pc av_log+164                  (libffmpegutils.so)
+#05 pc ffmpeg_parse_options+92     (libffmpegutils.so)
+#06 pc exe_ffmpeg_cmd+192          (libffmpegutils.so)
+```
+
+成功时日志也可观察到异常：option 参数显示为乱码： `matched as option 'version' (show version) with argument '�L�['`
+
+#### 02.根因定位（Root Cause）
+
+问题出在 NAPI 绑定层的 `vector_to_argv()` 函数（napi_ffmpeg.cpp:58-79）。
+
+该函数将 `std::vector<std::string>` 转换为 C 风格的 `char**` 时， 仅分配了 `argv.size()` 个元素，**未在末尾添加 NULL 终止符**。
+
+标准 C 的 argv 约定要求 `argv[argc] == NULL`。FFmpeg 内部多处依赖此约定：
+
+1. `cmdutils.c:761` — `OPT_EXIT` 选项（如 `-version`、`-h`）直接读取 `argv[optindex++]` 作为可选参数，不检查边界：
+
+   ```c
+   if (po->flags & OPT_EXIT) {
+       arg = argv[optindex++];  // 越界读取 argv[2]，期望为 NULL
+   }
+   ```
+
+2. `cmdutils.c:741` — `GET_ARG` 宏通过 `if (!arg)` 检测参数是否存在，依赖 NULL 哨兵值
+
+3. `cmdutils.c:775` — `if (argv[optindex])` 检查，同样依赖 NULL 终止
+
+由于缺少 NULL 终止符，`argv[argc]` 读取到堆上的随机数据：
+
+- 若恰好指向可读内存 → 成功但日志显示乱码（如 `'�L�['`）
+- 若指向未映射内存 → SIGSEGV 崩溃
+
+这就是"概率性成功/崩溃"的原因。
+
+#### 03.解决方案（Solution）
+
+修改 `napi_ffmpeg.cpp` 中的 `vector_to_argv()` 函数，多分配一个位置并设置 NULL 终止符：
+
+修改前：
+
+```cpp
+char** result = (char**)malloc(sizeof(char*) * argv.size());
+// ... 填充 result[0] ~ result[size-1] ...
+return result;
+```
+
+修改后：
+
+![结果20](./src/main/resources/base/media/pic20.png)
+
+修改文件：`lib_ffmpeg_utils/src/main/cpp/napi_ffmpeg.cpp`，`vector_to_argv()` 函数。
+
+#### 04.影响范围（Impact）
+
+此问题影响所有 FFmpeg 命令的执行，不仅限于 `-version`。 任何带 `OPT_EXIT` 标志的选项（`-version`、`-h`、`-help`、`-buildconf` 等） 以及 AVOption 解析路径都可能触发越界读取。
+
+修复后所有 FFmpeg 命令执行均可稳定运行，不再出现概率性崩溃。
+
 ## 鸣谢
 
-感谢 **zpswz、FXY970610、magicalapp** 提出的相关 issue，帮助我更好地完善和验证了本项目。
+感谢 **zpswz、FXY970610、magicalapp、peerless2012** 提出的相关 issue，帮助我更好地完善和验证了本项目。
 
 ## License
 

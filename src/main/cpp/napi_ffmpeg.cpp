@@ -53,7 +53,8 @@ static thread_local CallBackInfo* g_currentCallback = nullptr;
 // ============================================
 
 char** vector_to_argv(const std::vector<std::string>& argv) {
-    char** result = (char**)malloc(sizeof(char*) * argv.size());
+    // 多分配一个位置用于 NULL 终止符，FFmpeg 内部依赖 argv[argc] == NULL
+    char** result = (char**)malloc(sizeof(char*) * (argv.size() + 1));
     if (!result) {
         OH_LOG_ERROR(LOG_APP, "malloc failed for argv");
         return nullptr;
@@ -71,6 +72,7 @@ char** vector_to_argv(const std::vector<std::string>& argv) {
             return nullptr;
         }
     }
+    result[argv.size()] = NULL;
     
     return result;
 }

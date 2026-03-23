@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <math.h>
+#include <stdio.h>
+#include "hilog/log.h"
 
 /* Include only the enabled headers since some compilers (namely, Sun
    Studio) will not omit unused inline functions and create undefined
@@ -76,7 +78,9 @@ void uninit_opts(void)
 
 void log_callback_help(void *ptr, int level, const char *fmt, va_list vl)
 {
-    vfprintf(stdout, fmt, vl);
+    char line[1024];
+    vsnprintf(line, sizeof(line), fmt, vl);
+    OH_LOG_Print(LOG_APP, LOG_INFO, 0x3200, "FFmpegHelp", "%{public}s", line);
 }
 
 void init_dynload(void)
