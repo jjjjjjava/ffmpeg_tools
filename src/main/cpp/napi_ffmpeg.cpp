@@ -3,13 +3,15 @@
  * 实现 C++ 与 ArkTS 之间的交互，通过 aki::JSBind 框架
  * 
  * 注意：FFmpeg 内部使用大量全局变量，不支持多线程并发执行
- * 任务调度层应确保串行执行
+ * 两个原生执行入口共用互斥锁，保证 FFmpeg 与 ffprobe 串行执行
  */
 
 #include <aki/jsbind.h>
 #include <string>
 #include <vector>
 #include <cstring>
+#include <mutex>
+#include <atomic>
 
 #include "hilog/log.h"
 
@@ -17,9 +19,11 @@
 // 注意：不引入 fftools/ffmpeg.h 避免 C++ 关键字 'class' 冲突
 extern "C" {
 #include "fftools/ffmpeg_callbacks.h"
+#include "fftools/ffprobe_embedded.h"
 #include "libavutil/error.h"
 #include "libavformat/avformat.h"
 #include "libavutil/log.h"
+#include "libavutil/mem.h"
 
 // 前向声明 FFmpeg 命令执行函数
 int exe_ffmpeg_cmd(int argc, char **argv, Callbacks *callbacks);
@@ -29,6 +33,41 @@ int exe_ffmpeg_cmd(int argc, char **argv, Callbacks *callbacks);
 #undef LOG_TAG
 #define LOG_DOMAIN 0x3200
 #define LOG_TAG "FFmpegNAPI"
+
+// Both entry points share FFTools globals, including option dictionaries.
+static std::mutex commandMutex;
+static std::atomic<bool> loggingEnabled{false};
+void log_call_back(void *ptr, int level, const char *fmt, va_list vl);
+char** vector_to_argv(const std::vector<std::string>& argv);
+
+/** Result of an embedded ffprobe invocation. */
+struct FFprobeResult {
+    int code = 0;
+    std::string output;
+    std::string error;
+};
+
+FFprobeResult executeFFprobe(std::vector<std::string> args) {
+    std::lock_guard<std::mutex> lock(commandMutex);
+    args.insert(args.begin(), "ffprobe");
+    char **argv = vector_to_argv(args);
+    FFprobeResult result;
+    if (!argv) {
+        result.code = AVERROR(ENOMEM);
+        result.error = "Unable to allocate ffprobe arguments";
+        return result;
+    }
+    char *output = nullptr;
+    char *error = nullptr;
+    result.code = exe_ffprobe_cmd(args.size(), argv, &output, &error);
+    if (output) result.output = output;
+    if (error) result.error = error;
+    av_free(output);
+    av_free(error);
+    for (size_t i = 0; i < args.size(); ++i) free(argv[i]);
+    free(argv);
+    return result;
+}
 
 // ============================================
 // CallBackInfo - 存储 ArkTS 回调函数指针
@@ -138,6 +177,8 @@ void onFFmpegSuccess(void) {
  * @return 执行结果码，0表示成功
  */
 int executeFFmpegCommandAPP(std::string uuid, int cmdLen, std::vector<std::string> argv) {
+    std::lock_guard<std::mutex> lock(commandMutex);
+    av_log_set_callback(loggingEnabled ? log_call_back : av_log_default_callback);
     OH_LOG_INFO(LOG_APP, "executeFFmpegCommandAPP called with UUID: %{public}s, cmdLen: %d", 
                 uuid.c_str(), cmdLen);
     
@@ -219,12 +260,10 @@ void log_call_back(void *ptr, int level, const char *fmt, va_list vl) {
 /**
  * 控制是否显示 FFmpeg 日志
  * 
- * @param show true 显示日志，false 不显示
+ * @param show true 显示日志，false 不显示；在下次 FFmpeg 命令开始时生效
  */
 void showLog(bool show) {
-    if (show) {
-        av_log_set_callback(log_call_back);
-    }
+    loggingEnabled = show;
 }
 
 // ============================================
@@ -241,5 +280,13 @@ JSBIND_ADDON(ffmpegutils)
  */
 JSBIND_GLOBAL() {
     JSBIND_PFUNCTION(executeFFmpegCommandAPP);  // 异步函数
+    JSBIND_PFUNCTION(executeFFprobe);
     JSBIND_FUNCTION(showLog);                   // 同步函数
+}
+
+JSBIND_CLASS(FFprobeResult) {
+    JSBIND_CONSTRUCTOR<>();
+    JSBIND_PROPERTY(code);
+    JSBIND_PROPERTY(output);
+    JSBIND_PROPERTY(error);
 }

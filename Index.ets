@@ -24,4 +24,4 @@ export { FFmpegCommandBuilder } from './src/main/ets/ffmpeg/FFmpegCommandBuilder
 export { FLog } from './src/main/ets/ffmpeg/FLog';
 
 // FFmpeg 原生封装
-export { FFMpegUtils, FFmpegCommandOptions } from './src/main/ets/ffmpeg/FFMpegUtils';
+export { FFMpegUtils, FFmpegCommandOptions, FFprobeResult, executeFFprobe } from './src/main/ets/ffmpeg/FFMpegUtils';

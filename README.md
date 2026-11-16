@@ -312,9 +312,41 @@ manager.execute(cmd, 180000, callback);
 
 实测发现：FFmpeg 内部仍大量依赖全局变量与共享状态——因此不适合在同一进程内多线程并发执行多个 FFTools 实例；并发运行会导致互相干扰、崩溃或数据错乱。
 
-**当前策略**：任务调度层通过限制工作线程数量为 1，保证串行执行。
+**当前策略**：任务调度层串行处理 FFmpeg 任务；FFmpeg 与 ffprobe 的原生执行入口另共用互斥锁，确保直接调用两个接口时也不会同时访问 FFTools 全局状态。等待锁发生在原生工作线程中。
 
 ## API
+
+### ffprobe 媒体信息查询
+
+```typescript
+import { executeFFprobe } from '@prq/ffmpeg-tools';
+
+const result = await executeFFprobe([
+  '-v', 'error',
+  '-show_format', '-show_streams',
+  '-of', 'json',
+  inputPath,
+]);
+if (result.code === 0) {
+  console.info(result.output); // JSON 原文，可按业务所需字段解析
+} else {
+  console.error(`ffprobe failed: ${result.code}, ${result.error}`);
+}
+```
+
+也可使用 `FFMpegUtils.executeFFprobe(args)`。参数数组不包含程序名，文件路径作为一个完整参数传入，无需额外引号。输入文件应位于应用可访问的位置。
+
+返回 `Promise<FFprobeResult>`：`code` 为退出状态（0 表示成功），`output` 为原始探测输出，`error` 为失败诊断。命令失败通过非零 `code` 返回；桥接层异常仍可导致 Promise reject。输出格式由参数决定，不会自动添加 `-of json`。指定 `-o <path>` 时结果写入该文件，`output` 为空。`-show_entries`、`-select_streams`、`-count_frames`、`-show_error`、`-version` 和 `-h` 等参数可直接传入。
+
+当前 FFmpeg 库仍沿用已有产物（版本标记 `n6.1.2-42-g5d7a2a13e6`），其中包含 H.264 鸿蒙硬解码器和硬编码器。`ffprobe.c` 对齐到 `ohos-n6.1.2` 的 `5d7a2a13e6e252d74d56287b71d62d7ef003fd21`，并适配模块已有的 cmdutils 接口及应用内运行方式。`ohos-n6.1.2_dev` 是另一条分支，其当前本地记录没有硬编码器，本次不替换底层静态库。
+
+主机回归脚本使用真实 FFmpeg 库，在同一个进程中连续运行 21 条命令，覆盖音视频 JSON 对照、中文/空格路径、字段与流筛选重置、错误后恢复、文件输出及 FFmpeg/ffprobe 交替执行：
+
+```bash
+python3 tests/native/test_ffprobe.py --source /absolute/path/to/built-host-FFmpeg
+```
+
+传入的源码目录应使用上述提交完成主机编译，并包含静态库及 `ffmpeg`、`ffprobe`。测试所需配置至少启用 WAV/MOV/rawvideo 解封装、WAV/MP4/null 封装、PCM S16LE/MPEG4/rawvideo 解码、PCM S16LE/MPEG4 编码、anull/null/aresample/scale/format 滤镜和 file 协议。此测试不替代鸿蒙设备上的 NAPI 调用和硬件编解码验证。
 
 ### FFmpegFactory（零配置命令工厂）
 

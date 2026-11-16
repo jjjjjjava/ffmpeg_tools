@@ -55,6 +55,7 @@ add_library(ffmpegutils SHARED
     
     # FFmpeg 命令行工具完整源码
     ${FFTOOLS_DIR}/ffmpeg.c
+    ${FFTOOLS_DIR}/ffprobe.c
     ${FFTOOLS_DIR}/cmdutils.c
     ${FFTOOLS_DIR}/exception.c
     ${FFTOOLS_DIR}/ffmpeg_opt.c
@@ -67,7 +68,7 @@ add_library(ffmpegutils SHARED
     ${FFTOOLS_DIR}/sync_queue.c
     ${FFTOOLS_DIR}/objpool.c
     ${FFTOOLS_DIR}/thread_queue.c
-    # 注意：不包含 ffplay.c 和 ffprobe.c（独立工具）
+    # ffplay 仍作为独立工具，不参与应用内调用。
 )
 
 # ============================================

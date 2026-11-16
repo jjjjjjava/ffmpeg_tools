@@ -115,8 +115,8 @@ extern __thread volatile int longjmp_value;
 // 全局回调指针，用于在 FFmpeg 执行过程中报告状态
 static Callbacks *g_callbacks = NULL;
 
-const char program_name[] = "ffmpeg";
-const int program_birth_year = 2000;
+const char *program_name = "ffmpeg";
+int program_birth_year = 2000;
 
 static FILE *vstats_file;
 

@@ -5,6 +5,18 @@
 
 import libAddon from 'libffmpegutils.so'
 
+/** ffprobe 的命令结果；output 格式由 -of 等参数决定。 */
+export interface FFprobeResult {
+  code: number;
+  output: string;
+  error: string;
+}
+
+/** 执行 ffprobe，参数不含程序名。与 FFmpeg 在 Native 层串行执行。 */
+export function executeFFprobe(args: string[]): Promise<FFprobeResult> {
+  return libAddon.executeFFprobe(args);
+}
+
 /**
  * FFmpeg 命令执行选项接口
  */
@@ -39,6 +51,11 @@ export interface FFmpegCommandOptions {
  * 提供视频处理、格式转换等功能
  */
 export class FFMpegUtils {
+  /** 执行 ffprobe；命令失败通过非零 code 返回。 */
+  static executeFFprobe(args: string[]): Promise<FFprobeResult> {
+    return executeFFprobe(args);
+  }
+
   /**
    * 执行 FFmpeg 命令
    * 

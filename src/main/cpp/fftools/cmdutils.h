@@ -37,12 +37,18 @@
 /**
  * program name, defined by the program for show_version().
  */
-extern const char program_name[];
+extern const char *program_name;
 
 /**
  * program birth year, defined by the program for show_banner()
  */
-extern const int program_birth_year;
+extern int program_birth_year;
+
+struct AVBPrint;
+/* Set only while a serialized, embedded ffprobe command is running. */
+extern struct AVBPrint *fftools_output;
+extern void (*program_help)(const char *opt, const char *arg);
+int fftools_printf(const char *fmt, ...);
 
 extern AVDictionary *sws_dict;
 extern AVDictionary *swr_opts;

@@ -53,6 +53,7 @@
 #include "fopen_utf8.h"
 #include "opt_common.h"
 #include "exception.h"
+#include "libavutil/bprint.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -68,6 +69,27 @@ AVDictionary *format_opts, *codec_opts;
 
 int hide_banner = 0;
 
+AVBPrint *fftools_output;
+void (*program_help)(const char *, const char *) = show_help_default;
+
+int fftools_printf(const char *fmt, ...)
+{
+    va_list ap;
+    int ret;
+    va_start(ap, fmt);
+    if (fftools_output) {
+        unsigned before = fftools_output->len;
+        av_vbprintf(fftools_output, fmt, ap);
+        ret = fftools_output->len - before;
+    } else {
+        ret = vprintf(fmt, ap);
+    }
+    va_end(ap);
+    return ret;
+}
+
+#define printf fftools_printf
+
 void uninit_opts(void)
 {
     av_dict_free(&swr_opts);
@@ -80,7 +102,10 @@ void log_callback_help(void *ptr, int level, const char *fmt, va_list vl)
 {
     char line[1024];
     vsnprintf(line, sizeof(line), fmt, vl);
-    OH_LOG_Print(LOG_APP, LOG_INFO, 0x3200, "FFmpegHelp", "%{public}s", line);
+    if (fftools_output)
+        fftools_printf("%s", line);
+    else
+        OH_LOG_Print(LOG_APP, LOG_INFO, 0x3200, "FFmpegHelp", "%{public}s", line);
 }
 
 void init_dynload(void)
