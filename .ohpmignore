@@ -1,0 +1,11 @@
+.git
+.idea
+.test
+.cxx
+.hvigor
+.preview
+node_modules
+oh_modules
+build
+tests
+.DS_Store

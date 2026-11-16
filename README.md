@@ -14,13 +14,14 @@ ohpm install @prq/ffmpeg-tools
 
 - 提供统一、可编程的音视频处理能力
 - 支持转码、提取、下载等常见场景
+- 支持通过 ffprobe 异步读取媒体信息，返回原始输出、退出码和错误诊断（v2.2.7 新增）
 - 内置完善的任务管理与进度控制机制
 - 提供硬件解码与编码加速能力，在保证稳定性的前提下显著提升处理效率，适合对性能与能耗敏感的音视频场景。
 - 最低运行版本 *"compatibleSdkVersion": "5.0.0(12)"*
 
 ## 为什么选我
 
-- **体积小巧**：仅 **11.46MB**，在同类工具中体量最小，可有效控制包体积增长。
+- **按需集成**：提供 arm64-v8a 原生库；HAR 下载体积和最终应用增量以实际构建产物为准。
 - **能力灵活且完备**：既支持通过 `FFmpegCommandBuilder` 链式构建自定义 FFmpeg 命令，也在 `FFmpegFactory` 中内置了多种常用命令，开箱即用。
 - **性能表现优秀**：支持硬件加速，2 分钟视频加水印仅需 **15.68s**。
 - **实现透明、可扩展**：整体原理与核心代码均已开源，并提供完整的实现笔记与文档参考，便于二次开发与问题排查。
@@ -466,7 +467,7 @@ python3 tests/native/test_ffprobe.py --source /absolute/path/to/built-host-FFmpe
    ]
    ```
 
-2. **包体积优化**：当前 `libffmpegutils.so` 约 70MB（依赖完整 FFmpeg 库）
+2. **包体积优化**：发布构建会剥离 Native 调试符号，实际体积以所用版本的构建产物为准。
    - 建议在 `module.json5` 中开启压缩：`"compressNativeLibs": true`
    - 可参考华为官方方案进行拆分与裁剪：[华为开发者博客](https://developer.huawei.com/consumer/cn/blog/topic/03171278604140060)
 
@@ -551,6 +552,15 @@ python3 tests/native/test_ffprobe.py --source /absolute/path/to/built-host-FFmpe
 ### v2.2.6
 
 1解决 [#issue6](https://github.com/jjjjjjava/ffmpeg_tools/issues/6)，解决直接使用execute方法导致崩溃
+
+### v2.2.7
+
+1. 新增 `executeFFprobe(args)` 和 `FFMpegUtils.executeFFprobe(args)`，异步读取媒体信息，返回 `{ code, output, error }`；用法见上方“ffprobe 媒体信息查询”。
+2. 支持 JSON 输出、字段/流筛选、帧数统计、文件输出、帮助及版本查询；命令参数不包含程序名，输出格式由调用方指定。
+3. FFmpeg 和 ffprobe 原生入口统一串行执行，清理 ffprobe 的调用状态，支持同进程重复调用及失败后恢复。
+4. 保留原有 FFmpeg 静态库和鸿蒙硬件编解码能力，最低版本仍为 HarmonyOS 5.0（API 12），仅支持 arm64-v8a。
+5. ARM64 鸿蒙模拟器已验证 WAV 自检和 60 秒 H.264/AAC MP4 媒体探测；本版本尚未做真机硬件编解码验证。
+6. 发布包排除 Git 历史、IDE 配置、测试代码和构建缓存。
 
 ## 问题根因分析与修复方案（Root Cause & Fix）
 

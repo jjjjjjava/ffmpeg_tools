@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.7] - 2026-11-16
+
+### Added
+
+- 新增 `executeFFprobe(args)` 和 `FFMpegUtils.executeFFprobe(args)`，异步返回退出码、原始输出及错误诊断；支持读取容器、音视频流、时长、分辨率和编码信息。
+- 支持 ffprobe 的 JSON 输出、字段与流筛选、帧数统计、文件输出，以及帮助和版本查询。
+- 增加同进程连续调用的原生回归脚本，覆盖选项重置、错误后恢复及 FFmpeg/ffprobe 交替执行。
+
+### Changed
+
+- FFmpeg 与 ffprobe 原生执行入口共用互斥锁，串行访问 FFTools 全局状态；每次 ffprobe 调用结束后清理资源和选项。
+- 沿用现有 FFmpeg 静态库及鸿蒙硬件编解码能力，最低系统版本仍为 HarmonyOS 5.0（API 12），仅支持 arm64-v8a。
+- 发布包排除 Git 历史、本地 IDE 配置、测试代码和构建缓存。
+
+### Validation
+
+- ARM64 鸿蒙模拟器验证通过：FFmpeg 复制内置 WAV 后使用 ffprobe 探测；读取 60 秒 H.264/AAC MP4 的主要媒体信息，与电脑端结果一致。
+- 尚未验证本版本在真机上的硬件编解码；不同 FFmpeg 版本的部分元数据字段可能存在差异。
+
 ## [2.2.6] - 2026-03-23
 
 ### Fixed
